@@ -84,7 +84,12 @@ int main(int argc, char *argv[]) {
     long chunk_size = file_size / num_threads;
     pthread_t threads[MAX_THREADS];
     ThreadData thread_data[MAX_THREADS];
+    pthread_attr_t attr;
     int *results = calloc(1000000, sizeof(int)); // Assuming 1M lines max
+
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); //Set Pthreads to joinable
 
     int current_line = 0;
 
@@ -109,10 +114,12 @@ int main(int argc, char *argv[]) {
         thread_data[i].line_start = current_line;
         thread_data[i].results = results;
 
-        pthread_create(&threads[i], NULL, find_max_ascii, &thread_data[i]);
+        pthread_create(&threads[i], &attr, find_max_ascii, &thread_data[i]);
 
         current_line += 1000000 / num_threads;
     }
+
+    pthread_attr_destroy(&attr); //Free the atribute of the threads.
 
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
