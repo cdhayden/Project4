@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define MAX_LINE_LENGTH 8192  //Complete guess right now
 int MAX_THREADS = 1;  // to change with core count
 int MAX_LINES = 1; // vary input size
 
@@ -32,25 +31,22 @@ void *find_max_ascii(void *arg) {
     long size = data->end_offset - data->start_offset;
 
     int line_num = data->line_start;
-    char line[MAX_LINE_LENGTH];
-    long i = 0, line_idx = 0;
+    long i = 0;
+
+    int max_val = 0;
 
     while (i < size) {
         char c = buffer[i++];
         if (c == '\n' || i == size) {
-            line[line_idx] = '\0';
-            int max_val = 0;
-            for (int j = 0; line[j] != '\0'; j++) {
-                if ((unsigned char)line[j] > max_val) {
-                    max_val = (unsigned char)line[j];
-                }
-            }
             data->results[line_num++] = max_val;
-            line_idx = 0;
-        } else if (line_idx < MAX_LINE_LENGTH - 1) {
-            line[line_idx++] = c;
+            max_val = 0;
+        } else {
+            if ((unsigned char)c > max_val) {
+                max_val = (unsigned char)c;
+            }
         }
     }
+
     return NULL;
 }
 
