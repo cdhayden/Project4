@@ -4,7 +4,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <mpi.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -72,7 +72,6 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-
     
 
     long file_size = sb.st_size;
@@ -82,6 +81,8 @@ int main(int argc, char *argv[]) {
         close(fd);
         return EXIT_FAILURE;
     }
+
+    
 
     int num_threads = MAX_THREADS;
     long chunk_size = file_size / num_threads;
