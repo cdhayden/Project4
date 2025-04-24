@@ -122,8 +122,8 @@ int main(int argc, char *argv[]) {
         long local_end = local_start;
         int lines = 0;
 
-        // Align to next newline to prevent splitting a line :: OLD
-        /*
+        // Align to next newline to prevent splitting a line 
+        
         if (i != 0) {
             while (start < file_size && file_data[start] != '\n') start++;
             start++;
@@ -132,8 +132,8 @@ int main(int argc, char *argv[]) {
             while (end < file_size && file_data[end] != '\n') end++;
             end++;
         }
-        */
-        // NEW
+        
+        
         while (local_end < valid_size && lines < lines_for_thread) {
             if (file_data[local_end] == '\n') {
                 lines++;
