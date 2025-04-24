@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
     int remainder = MAX_LINES % MAX_THREADS;
     
     int num_threads = MAX_THREADS;
-    //long chunk_size = file_size / num_threads;
+    long chunk_size = file_size / num_threads;
     pthread_t threads[MAX_THREADS];
     ThreadData thread_data[MAX_THREADS];
     pthread_attr_t attr;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < num_threads; i++) {
         int lines_for_thread = lines_per_thread + (i < remainder ? 1 : 0);
         
-        long start = i * chunk_size;
+        start = i * chunk_size;
         long end = (i == num_threads - 1) ? file_size : (i + 1) * chunk_size;
 
         long local_start = start;
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
         }
         */
         // NEW
-        while (local_end < valid_size && lines < lines_for_this_thread) {
+        while (local_end < valid_size && lines < lines_for_thread) {
             if (file_data[local_end] == '\n') {
                 lines++;
             }
