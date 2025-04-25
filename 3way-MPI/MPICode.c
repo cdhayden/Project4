@@ -26,29 +26,36 @@ typedef struct {
     int *results;
 } ThreadData;
 
-void *find_max_ascii(void *src, void *dest) {
-    ThreadData *data = (ThreadData *)arg;
-    char *buffer = data->data + data->start_offset;
-    long size = data->end_offset - data->start_offset;
+int *find_max_ascii(char *src, int size) {
+    int* result = calloc(size+2, sizeof(char));
+	int lines = 2;
+	int max_value = 0;
+	bool hold = false;
+	for(int i  = 0; i < size && src[i] != '\0'; i++){
 
-    int line_num = data->line_start;
-    long i = 0;
-
-    int max_val = 0;
-
-    while (i < size) {
-        char c = buffer[i++];
-        if (c == '\n' || i == size) {
-            data->results[line_num++] = max_val;
-            max_val = 0;
-        } else {
+		char c = src[i];
+		 if (c == '\n') {
+			result[lines] = max_value;
+			lines++;
+			max_value = 0;
+			hold = false;
+		 }
+		 else {
             if ((unsigned char)c > max_val) {
                 max_val = (unsigned char)c;
             }
+			 hold = true;
         }
-    }
 
-    return NULL;
+	}
+	if(hold){
+
+		result[1] = 1;
+	}
+	result[0] = lines;
+	return result
+
+	
 }
 
 int main(int argc, char *argv[]) {
@@ -96,8 +103,12 @@ int main(int argc, char *argv[]) {
         if(sb.file_size/(NUM_THREADS-1) <= MAX_INPUT){ //If the file is smaller than expected input is larger than expected
 
             int chunk = sb.file_size/(NUM_THREADS-1); //Find how much to read per input
+			for(int i = 1; i < MAX_THREADS-1; i++){
+				MPI_Send(&chunk, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
+			}
             int remainer = sb.file_size%(NUM_THREADS-1); //Find the remainer for the last thread to complete
-            int *buffer = calloc(chunk+1, sizeof(char)); // depending on input size
+			MPI_Send(&remainer, 1, MPI_INT, MAX_THREADS - 1, 0, MPI_COMM_WORLD);
+            char *buffer = calloc(chunk+1, sizeof(char)); // depending on input size
 
             bool hold = false; //Hold varible for later in the for loops to check for non terminating lines
         
@@ -146,7 +157,11 @@ int main(int argc, char *argv[]) {
             free(buffer);
         }
         else{
-            int *buffer = calloc(MAX_INPUT, sizeof(char)); // depending on input size
+			int psize = MAX_INPUT;
+			for(int i = 1; i < MAX_THREADS; i++){
+				MPI_Send(&psize, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
+			}
+            char *buffer = calloc(MAX_INPUT, sizeof(char)); // depending on input size
             bool done = false; //Bool to check if method is done
             bool hold = false; //Hold varible for later in the for loops to check for non terminating lines
             while(!done){ //While not done
@@ -195,12 +210,27 @@ int main(int argc, char *argv[]) {
             }
             free(buffer);
         }
+
+		char* temp = calloc(MAX_INPUT, sizeof(char));
+		temp[0] = '\0';
+		temp[1] = '\0';
+		for(int i = 1; i < MAX_THREADS; i++){
+			MPI_Send(temp, MAX_INPUT, MPI_CHAR, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
+		}
+
+		free(temp);
+	
+	    
         for (int i = 0; i < MAX_LINES; i++) {
             if (results[i] != 0) {
                 printf("%d: %d\n", i, results[i]);
             }
         }
         free(results);
+
+		
+    	close(fd);
+	    
         
     }
     else{
@@ -209,6 +239,36 @@ int main(int argc, char *argv[]) {
         sscanf(argv[3], "%d", &MAX_INPUT);
         sscanf(argv[4], "%d", &MAX_LINES);
 
+		bool done = false;
+		int size = 0;
+		MPI_Recv(&size, 1, MPI_INT, 0, 0,  MPI_COMM_WORLD);
+
+		char* buffer = calloc(size, sizeof(char));
+		
+		while(!done){
+
+			MPI_Recv(buffer, size, MPI_CHAR, 0,0, MPI_COMM_WORLD); 
+
+			if(buffer[0] == '\0' && buffer[1] == '\0') 
+			{
+				done = true;
+			}
+				
+			else
+			{
+				int* result = find_max_ascii(buffer, size);
+
+				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
+
+				free(result);
+			}
+			
+			
+
+		}
+
+		free(buffer);
         
 
     }
@@ -216,7 +276,6 @@ int main(int argc, char *argv[]) {
 
 
     
-    close(fd);
     
     MPI_Finalize();
 
