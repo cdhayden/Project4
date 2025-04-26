@@ -30,7 +30,7 @@ int *find_max_ascii(char *src, int size) {
     int* result = calloc(size+2, sizeof(char));
 	int lines = 2;
 	int max_value = 0;
-	bool hold = false;
+	bool hold = 0;
 	for(int i  = 0; i < size && src[i] != '\0'; i++){
 
 		char c = src[i];
@@ -38,17 +38,17 @@ int *find_max_ascii(char *src, int size) {
 			result[lines] = max_value;
 			lines++;
 			max_value = 0;
-			hold = false;
+			hold = 0;
 		 }
 		 else {
             if ((unsigned char)c > max_val) {
                 max_val = (unsigned char)c;
             }
-			 hold = true;
+			 hold = 1;
         }
 
 	}
-	if(hold){
+	if(hold == 1){
 
 		result[1] = 1;
 	}
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 			MPI_Send(&remainer, 1, MPI_INT, MAX_THREADS - 1, 0, MPI_COMM_WORLD);
             char *buffer = calloc(chunk+1, sizeof(char)); // depending on input size
 
-            bool hold = false; //Hold varible for later in the for loops to check for non terminating lines
+            int hold = 0; //Hold varible for later in the for loops to check for non terminating lines
         
             int piter = 1; //Iterator Varible for the processes
             while (piter < MAX_THREADS-1){
@@ -125,11 +125,11 @@ int main(int argc, char *argv[]) {
             
             for(int i = 1; i < MAX_THREADS; i++){
                 int size = 0;
-                MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD);
+                MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 int *cast = calloc(size, sizeof(int)); // depending on Max lines
-                MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD);
+                MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                     
-                if(hold){//If hold is true
+                if(hold == 1){//If hold is true
                     if(results[resline-1] < cast[2]) { //If the incomplete line's value is less than the rest of the line, update it
                 
                             results[resline-1] = cast[2];        
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
                         results[resline] = cast[j];
                         resline++;
                     }
-                    hold = false;
+                    hold = 0;
                 }
                 else{
                     for(int j = 2; j < size; j++){
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
                 }
                 if(cast[1] == 1) //If the line doesnt terminate, make a note for the next iteration
                 {
-                    hold = true;
+                    hold = 1;
                 }
                 free(cast);
             }
@@ -162,9 +162,9 @@ int main(int argc, char *argv[]) {
 				MPI_Send(&psize, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
 			}
             char *buffer = calloc(MAX_INPUT, sizeof(char)); // depending on input size
-            bool done = false; //Bool to check if method is done
-            bool hold = false; //Hold varible for later in the for loops to check for non terminating lines
-            while(!done){ //While not done
+            int done = 0; //Bool to check if method is done
+            int hold = 0; //Hold varible for later in the for loops to check for non terminating lines
+            while(done==0){ //While not done
         
                 int piter = 1; //Iterator Varible for the processes
                 while (piter < MAX_THREADS && read(fd, results, MAX_INPUT - 1) != 0){
@@ -174,16 +174,16 @@ int main(int argc, char *argv[]) {
                     piter++; //Increment the process counter
                 }
                 if(piter < MAX_THREADS) {//If the read got zero, (If both while conditons above occur, it'll loop for no downside)
-                    done = true;
+                    done = 1;
                 } 
                 for(int i = 1; i < piter; i++){
 
                     int size = 0;
-                    MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD);
+                    MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                     int *cast = calloc(size, sizeof(int)); // depending on Max lines
-                    MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD);
+                    MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
-                    if(hold){//If hold is true
+                    if(hold == 1){//If hold is true
                         if(results[resline-1] < cast[2]) { //If the incomplete line's value is less than the rest of the line, update it
                             results[resline-1] = cast[2];
                         }
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
                             results[resline] = cast[j];
                             resline++;
                         }
-                        hold = false;
+                        hold = 0;
                     }
                     else{
                         for(int j = 2; j < size; j++){
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
                     }
                     if(cast[1] == 1) //If the line doesnt terminate, make a note for the next iteration
                     {
-                        hold = true;
+                        hold = 1;
                     }
                     free(cast);
                 }
@@ -239,27 +239,27 @@ int main(int argc, char *argv[]) {
         sscanf(argv[3], "%d", &MAX_INPUT);
         sscanf(argv[4], "%d", &MAX_LINES);
 
-		bool done = false;
+		int done = 0;
 		int size = 0;
-		MPI_Recv(&size, 1, MPI_INT, 0, 0,  MPI_COMM_WORLD);
+		MPI_Recv(&size, 1, MPI_INT, 0, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
 		char* buffer = calloc(size, sizeof(char));
 		
-		while(!done){
+		while(done == 0){
 
-			MPI_Recv(buffer, size, MPI_CHAR, 0,0, MPI_COMM_WORLD); 
+			MPI_Recv(buffer, size, MPI_CHAR, 0,0, MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
 
 			if(buffer[0] == '\0' && buffer[1] == '\0') 
 			{
-				done = true;
+				done = 1;
 			}
 				
 			else
 			{
 				int* result = find_max_ascii(buffer, size);
 
-				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
+				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
 				free(result);
 			}
