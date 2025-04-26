@@ -81,76 +81,64 @@ int main(int argc, char *argv[]) {
     }
 
     // size check
+    long *line_offsets = malloc(sizeof(long) * (MAX_LINES + 1));
+    if (!line_offsets) {
+        perror("malloc");
+        munmap(file_data, file_size);
+        close(fd);
+        return EXIT_FAILURE;
+    }
+
     long valid_size = 0;
     int line_count = 0;
+    line_offsets[0] = 0;
+
     while (valid_size < file_size && line_count < MAX_LINES) {
         if (file_data[valid_size] == '\n') {
-            line_count++;
+            line_offsets[++line_count] = valid_size + 1;
         }
         valid_size++;
     }
 
     if (line_count < MAX_LINES) {
         fprintf(stderr, "Warning: File only has %d lines. Proceeding with fewer lines.\n", line_count);
-        MAX_LINES = line_count;
     }
 
-    int lines_per_thread = MAX_LINES / MAX_THREADS;
-    int remainder = MAX_LINES % MAX_THREADS;
+    int actual_lines = line_count;
+    int *results = calloc(actual_lines, sizeof(int));
+    if (!results) {
+        perror("calloc");
+        free(line_offsets);
+        munmap(file_data, file_size);
+        close(fd);
+        return EXIT_FAILURE;
+    }
+
+    int lines_per_thread = actual_lines / MAX_THREADS;
+    int remainder = actual_lines % MAX_THREADS;
     
     int num_threads = MAX_THREADS;
-    long chunk_size = file_size / num_threads;
     pthread_t threads[MAX_THREADS];
     ThreadData thread_data[MAX_THREADS];
     pthread_attr_t attr;
-    int *results = calloc(MAX_LINES, sizeof(int)); // depending on input size
-
-
+    
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); //Set Pthreads to joinable
 
     int current_line = 0;
-    long start = 0;
 
     for (int i = 0; i < num_threads; i++) {
         int lines_for_thread = lines_per_thread + (i < remainder ? 1 : 0);
-        
-        start = i * chunk_size;
-        long end = (i == num_threads - 1) ? file_size : (i + 1) * chunk_size;
-
-        long local_start = start;
-        long local_end = local_start;
-        int lines = 0;
-
-        // Align to next newline to prevent splitting a line 
-        
-        if (i != 0) {
-            while (start < file_size && file_data[start] != '\n') start++;
-            start++;
-        }
-        if (i != num_threads - 1) {
-            while (end < file_size && file_data[end] != '\n') end++;
-            end++;
-        }
-        
-        
-        while (local_end < valid_size && lines < lines_for_thread) {
-            if (file_data[local_end] == '\n') {
-                lines++;
-            }
-            local_end++;
-        }
 
         thread_data[i].thread_id = i;
         thread_data[i].data = file_data;
-        thread_data[i].start_offset = local_start;
-        thread_data[i].end_offset = local_end;
+        thread_data[i].start_offset = line_offsets[current_line];
+        thread_data[i].end_offset = line_offsets[current_line + lines_for_thread];
         thread_data[i].line_start = current_line;
         thread_data[i].results = results;
 
         pthread_create(&threads[i], &attr, find_max_ascii, &thread_data[i]);
 
-        start = local_end;
         current_line += lines_for_thread;
     }
 
@@ -160,7 +148,7 @@ int main(int argc, char *argv[]) {
         pthread_join(threads[i], NULL);
     }
 
-    for (int i = 0; i < MAX_LINES; i++) {
+    for (int i = 0; i < actual_lines; i++) {
         if (results[i] != 0) {
             printf("%d: %d\n", i, results[i]);
         }
@@ -169,6 +157,7 @@ int main(int argc, char *argv[]) {
     munmap(file_data, file_size);
     close(fd);
     free(results);
+    free(line_offsets);
 
     return EXIT_SUCCESS;
 }
