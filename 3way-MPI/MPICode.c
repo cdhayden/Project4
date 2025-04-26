@@ -41,7 +41,7 @@ int *find_max_ascii(char *src, int size) {
 			hold = 0;
 		 }
 		 else {
-            if ((unsigned char)c > max_val) {
+            if ((unsigned char)c > max_value) {
                 max_val = (unsigned char)c;
             }
 			 hold = 1;
@@ -53,7 +53,7 @@ int *find_max_ascii(char *src, int size) {
 		result[1] = 1;
 	}
 	result[0] = lines;
-	return result
+	return result;
 
 	
 }
@@ -100,13 +100,13 @@ int main(int argc, char *argv[]) {
         int *results = calloc(MAX_LINES, sizeof(int)); // depending on Max lines
         int resline = 0; //Line of the results buffer
         
-        if(sb.file_size/(NUM_THREADS-1) <= MAX_INPUT){ //If the file is smaller than expected input is larger than expected
+        if(sb.st_size/(MAX_THREADS-1) <= MAX_INPUT){ //If the file is smaller than expected input is larger than expected
 
-            int chunk = sb.file_size/(NUM_THREADS-1); //Find how much to read per input
+            int chunk = sb.st_size/(MAX_THREADS-1); //Find how much to read per input
 			for(int i = 1; i < MAX_THREADS-1; i++){
 				MPI_Send(&chunk, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
 			}
-            int remainer = sb.file_size%(NUM_THREADS-1); //Find the remainer for the last thread to complete
+            int remainer = sb.st_size%(MAX_THREADS-1); //Find the remainer for the last thread to complete
 			MPI_Send(&remainer, 1, MPI_INT, MAX_THREADS - 1, 0, MPI_COMM_WORLD);
             char *buffer = calloc(chunk+1, sizeof(char)); // depending on input size
 
