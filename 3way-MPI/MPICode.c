@@ -78,6 +78,9 @@ int main(int argc, char *argv[]) {
 	int number_of_processes;
 	MPI_Comm_size(MPI_COMM_WORLD, &number_of_processes);
 
+
+	 printf("Rank %d: Active\n", pid); 
+
     if(pid == 0){
 
         sscanf(argv[2], "%d", &MAX_THREADS); //Read into the arguments
@@ -100,13 +103,15 @@ int main(int argc, char *argv[]) {
         int *results = calloc(MAX_LINES, sizeof(int)); // depending on Max lines
         int resline = 0; //Line of the results buffer
         
-        if(sb.st_size/(MAX_THREADS-1) <= MAX_INPUT){ //If the file is smaller than expected input is larger than expected
+        if(sb.st_size/(MAX_THREADS-2) <= MAX_INPUT){ //If the file is smaller than expected input is larger than expected
 
             int chunk = sb.st_size/(MAX_THREADS-1); //Find how much to read per input
 			for(int i = 1; i < MAX_THREADS-1; i++){
+				printf("Rank %d: sending data to %d\n", pid, i); 
 				MPI_Send(&chunk, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
 			}
-            int remainer = sb.st_size%(MAX_THREADS-1); //Find the remainer for the last thread to complete
+            int remainer = sb.st_size%(MAX_THREADS-2); //Find the remainer for the last thread to complete
+		printf("Rank %d: sending data to %d\n", pid, MAX_THREADS - 1); 
 			MPI_Send(&remainer, 1, MPI_INT, MAX_THREADS - 1, 0, MPI_COMM_WORLD);
             char *buffer = calloc(chunk+1, sizeof(char)); // depending on input size
 
@@ -116,17 +121,21 @@ int main(int argc, char *argv[]) {
             while (piter < MAX_THREADS-1){
                 read(fd, results, chunk);
                 buffer[chunk] = '\0'; //Set the last char to a null terminator for string reading
+		    printf("Rank %d: sending data to %d\n", pid, piter); 
                 MPI_Send(buffer, chunk+1, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
                 piter++; //Increment the process counter
             }
             read(fd, results, remainer);
             buffer[remainer] = '\0'; //Set the last char to a null terminator for string reading
+		printf("Rank %d: sending data to %d\n", pid, piter); 
             MPI_Send(buffer, remainer, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
             
             for(int i = 1; i < MAX_THREADS; i++){
                 int size = 0;
+		    printf("Rank %d: reciving size from %d\n", pid, i);
                 MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                 int *cast = calloc(size, sizeof(int)); // depending on Max lines
+		    printf("Rank %d: reciving data from %d\n", pid, i);
                 MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                     
                 if(hold == 1){//If hold is true
@@ -159,6 +168,7 @@ int main(int argc, char *argv[]) {
         else{
 			int psize = MAX_INPUT;
 			for(int i = 1; i < MAX_THREADS; i++){
+				printf("Rank %d: sending data to %d\n", pid, i); 
 				MPI_Send(&psize, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
 			}
             char *buffer = calloc(MAX_INPUT, sizeof(char)); // depending on input size
@@ -170,6 +180,7 @@ int main(int argc, char *argv[]) {
                 while (piter < MAX_THREADS && read(fd, results, MAX_INPUT - 1) != 0){
 
                     buffer[MAX_INPUT-1] = '\0'; //Set the last char to a null terminator for string reading
+			printf("Rank %d: sending data to %d\n", pid, piter); 
                     MPI_Send(buffer, MAX_INPUT, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
                     piter++; //Increment the process counter
                 }
@@ -179,8 +190,10 @@ int main(int argc, char *argv[]) {
                 for(int i = 1; i < piter; i++){
 
                     int size = 0;
+			printf("Rank %d: recieving size from %d\n", pid, piter); 
                     MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
                     int *cast = calloc(size, sizeof(int)); // depending on Max lines
+			printf("Rank %d: recieving data from %d\n", pid, piter); 
                     MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
                     if(hold == 1){//If hold is true
@@ -215,6 +228,7 @@ int main(int argc, char *argv[]) {
 		temp[0] = '\0';
 		temp[1] = '\0';
 		for(int i = 1; i < MAX_THREADS; i++){
+			printf("Rank %d: sending termination to %d\n", pid, i); 
 			MPI_Send(temp, MAX_INPUT, MPI_CHAR, i, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
 		}
 
@@ -241,12 +255,14 @@ int main(int argc, char *argv[]) {
 
 		int done = 0;
 		int size = 0;
+	    printf("Rank %d: receive size from %d\n", pid, 0); 
 		MPI_Recv(&size, 1, MPI_INT, 0, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 
 		char* buffer = calloc(size, sizeof(char));
 		
 		while(done == 0){
 
+			printf("Rank %d: receive data from %d\n", pid, 0);
 			MPI_Recv(buffer, size, MPI_CHAR, 0,0, MPI_COMM_WORLD,MPI_STATUS_IGNORE); 
 
 			if(buffer[0] == '\0' && buffer[1] == '\0') 
@@ -258,7 +274,9 @@ int main(int argc, char *argv[]) {
 			{
 				int* result = find_max_ascii(buffer, size);
 
+				printf("Rank %d: sending size to %d\n", pid, 0);
 				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+				printf("Rank %d: sending data to %d\n", pid, 0);
 				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
 
 				free(result);
