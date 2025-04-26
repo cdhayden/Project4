@@ -30,7 +30,7 @@ int *find_max_ascii(char *src, int size) {
     int* result = calloc(size+2, sizeof(char));
 	int lines = 2;
 	int max_value = 0;
-	bool hold = 0;
+	int hold = 0;
 	for(int i  = 0; i < size && src[i] != '\0'; i++){
 
 		char c = src[i];
@@ -42,7 +42,7 @@ int *find_max_ascii(char *src, int size) {
 		 }
 		 else {
             if ((unsigned char)c > max_value) {
-                max_val = (unsigned char)c;
+                max_value = (unsigned char)c;
             }
 			 hold = 1;
         }
@@ -258,8 +258,8 @@ int main(int argc, char *argv[]) {
 			{
 				int* result = find_max_ascii(buffer, size);
 
-				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
 
 				free(result);
 			}
