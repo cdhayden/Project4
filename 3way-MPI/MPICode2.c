@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
             
             
             }
-            //Here
+            
             if(read(fd, buffer, MAX_INPUT - 1) == 0) {done = 1;}
             
             for(int i = 1; i < piter; i++){
@@ -98,13 +98,15 @@ int main(int argc, char *argv[]) {
                 int *resarray = calloc(size, sizeof(int));
                 
                 printf("Rank %d: Master reciving data from %d\n", pid, i);
-                MPI_Recv(&resarray, size, MPI_INT, i, 0 ,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(resarray, size, MPI_INT, i, 0 ,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 printf("Rank %d: Master recieved data from %d\n", pid, i); 
                 
                 if(hold == 1){
                     
                     if(resarray[2] > results[(resline - 1)]){
+                        
                         results[(resline - 1)] = resarray[2];
+                        
                     }
                     for(int j = 3; j < size && resline < MAX_LINES; j++){
                         
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]) {
                 
             piter = 1;
                 
-            //To Here
+            
             
         }
         
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
         free(buffer);
         
         for(int i = 0; i < resline; i++){
-            printf("Line %d: %d", i, results[i]);
+            printf("Line %d: %d\n", i, results[i]);
         }
         
         
@@ -175,6 +177,8 @@ int main(int argc, char *argv[]) {
            if(buffer[0] == 'a' && buffer[1] == 'a' && buffer[2] == 'a' && buffer[3] == 'a'){
                
                kill = 1;
+               printf("Rank %d: child recived kill from Master\n", pid); 
+               
            }
            else{
                
@@ -227,7 +231,7 @@ int main(int argc, char *argv[]) {
 	
 	            printf("Rank %d: find_max_ascii Done\n",pid);
 	
-	//And Here
+	
 	            printf("Rank %d: child sending size to Master: %d\n", pid, result[0]); 
 	            MPI_Send(result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 	            printf("Rank %d: child sent size from Master\n", pid); 
@@ -235,14 +239,14 @@ int main(int argc, char *argv[]) {
 	            printf("Rank %d: child sending data to Master\n", pid); 
 	            MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
 	            printf("Rank %d: child sent data to Master\n", pid); 
-
-	//To Here
+	            
 	            free(result);
                
                 }
             }
         
         free(buffer);
+        printf("Rank %d: child closing.\n", pid);
         
         
     }
