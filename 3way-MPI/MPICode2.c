@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         
         while(done == 0){
             
-            while(piter < number_of_processes && read(fd, buffer, MAX_INPUT - 1 ) != 0){
+             while(piter < number_of_processes && read(fd, buffer, MAX_INPUT - 1 ) != 0 && resline < MAX_LINES){
             
             buffer[MAX_INPUT-1] = '\0'; //Set the last char to a null terminator for string reading
 					
