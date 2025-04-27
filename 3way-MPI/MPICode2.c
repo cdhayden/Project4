@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-int MAX_THREADS = 1;  // to change with core count
 int MAX_INPUT = 1; // vary input size
 int MAX_LINES = 1; // vary amount of Lines total
 
@@ -17,16 +16,15 @@ int main(int argc, char *argv[]) {
 
     
     //Check for amount of arguments
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s <file_path> <thread_count> <input_size> <max_lines>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <file_path> <input_size> <max_lines>\n", argv[0]);
         return EXIT_FAILURE;
     }
     
     printf("Program Started\n"); 
 
-	sscanf(argv[2], "%d", &MAX_THREADS); //Read into the arguments
-    sscanf(argv[3], "%d", &MAX_INPUT);
-    sscanf(argv[4], "%d", &MAX_LINES);
+    sscanf(argv[2], "%d", &MAX_INPUT); //Read into the arguments
+    sscanf(argv[3], "%d", &MAX_LINES);
 
     // Initialize the MPI environment
 	MPI_Init(&argc, &argv);
