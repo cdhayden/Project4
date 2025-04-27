@@ -13,66 +13,6 @@ int MAX_THREADS = 1;  // to change with core count
 int MAX_INPUT = 1; // vary input size
 int MAX_LINES = 1; // vary amount of Lines total
 
-int *find_max_ascii(char *src, int size) {
-	
-	printf("find_max_ascii Started\n"); 
-	
-    int* result = calloc(size+2, sizeof(char)); //Get space for result size
-
-	
-	int lines = 2;//Get the number of lines, defaults to two for the size and holding var
-	
-	int max_value = 0; // Sets the max value of a line
-
-	
-	int hold = 0; //Bool that checks if theres a hold over
-
-	int setter = 0;
-	for(int i  = 0; i < size && src[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
-
-		setter = i;
-		char c = src[i];//Get the current character
-		
-		 if (c == '\n') { //If its a new lines,
-
-			 
-			result[lines] = max_value; //Report the max value to the results
-			lines++; //Increment lines
-			max_value = 0; //Reset the max value
-			hold = 0; //And reset hold to zero
-		 }
-			 
-		 else {//If its another character
-			 
-            if ((unsigned char)c > max_value) { //Check if the unsigned char is greater than the max value
-                max_value = (unsigned char)c; //And update max_value if it is
-            }
-			 hold = 1; //Set the hold to one to say we're at the end
-        }
-
-	}
-
-	if(max_value != 0) //If theres a left over value
-	{
-		result[lines] = max_value; //Set the last line to it,
-		lines++; //Increment lines
-	}
-	
-
-
-	result[1] = hold; //Set the hold varible to hold
-	
-	result[0] = lines; //Set the size varible to the current size
-	
-	printf("find_max_ascii Done\n");
-	
-	return result;//Return the results
-	
-
-
-	
-}
-
 int main(int argc, char *argv[]) {
 
     
@@ -119,11 +59,19 @@ int main(int argc, char *argv[]) {
             printf("Rank %d: Master Opened File\n", pid);
         }
         
+        int *results = calloc(MAX_LINES, sizeof(int));
         
         printf("Rank %d: Master Reading File\n", pid);
         char *buffer = calloc(MAX_INPUT, sizeof(char));
+        
+        int done = 0;
+        int hold = 0;
         int piter = 1;
-        while(piter < number_of_processes && read(fd, buffer, MAX_INPUT - 1 )){
+        int resline = 0;
+        
+        while(done == 0){
+            
+            while(piter < number_of_processes && read(fd, buffer, MAX_INPUT - 1 ) != 0){
             
             buffer[MAX_INPUT-1] = '\0'; //Set the last char to a null terminator for string reading
 					
@@ -134,12 +82,54 @@ int main(int argc, char *argv[]) {
             printf("Rank %d: data to %d sent\n", pid, piter); 
             piter++; //Increment the process counter
             
-            if(piter == number_of_processes){
+            
+            }
+            //Here
+            if(read(fd, buffer, MAX_INPUT - 1) == 0) {done = 1;}
+            
+            for(int i = 1; i < piter; i++){
                 
-                piter = 1;
+                int size = 0;
+                
+                printf("Rank %d: Master reciving size from %d\n", pid, i); 
+                MPI_Recv(&size, 1, MPI_INT, i, 0 ,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                printf("Rank %d: Master recieved size from %d: %d\n", pid, i, size); 
+                
+                int *resarray = calloc(size, sizeof(int));
+                
+                printf("Rank %d: Master reciving data from %d\n", pid, i);
+                MPI_Recv(&resarray, size, MPI_INT, i, 0 ,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                printf("Rank %d: Master recieved data from %d\n", pid, i); 
+                
+                if(hold == 1){
+                    
+                    if(resarray[2] > results[(resline - 1)]){
+                        results[(resline - 1)] = resarray[2];
+                    }
+                    for(int j = 3; j < size && resline < MAX_LINES; j++){
+                        
+                        results[resline] = resarray[j];
+                        resline++;
+                    }
+                    
+                }
+                else{
+                    for(int j = 2; j < size && resline < MAX_LINES; j++){
+                        
+                        results[resline] = resarray[j];
+                        resline++;
+                    }
+                    
+                }
+                
+                hold = resarray[1];
                 
             }
-            
+                
+                
+            piter = 1;
+                
+            //To Here
             
         }
         
@@ -155,6 +145,13 @@ int main(int argc, char *argv[]) {
         }
         
         free(buffer);
+        
+        for(int i = 0; i < resline; i++){
+            printf("Line %d: %d", i, results[i]);
+        }
+        
+        
+        free(results);
         
         close(fd);
         printf("Rank %d: Master Closed File\n", pid);
@@ -172,7 +169,9 @@ int main(int argc, char *argv[]) {
         char *buffer = calloc(MAX_INPUT, sizeof(char));
         while(kill != 1)
         {
+           printf("Rank %d: child reciving data from Master\n", pid); 
            MPI_Recv(buffer, MAX_INPUT, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+           printf("Rank %d: child recived data from Master\n", pid); 
            if(buffer[0] == 'a' && buffer[1] == 'a' && buffer[2] == 'a' && buffer[3] == 'a'){
                
                kill = 1;
@@ -228,12 +227,16 @@ int main(int argc, char *argv[]) {
 	
 	            printf("Rank %d: find_max_ascii Done\n",pid);
 	
-	
-	            for(int i = 0; i <result[0]; i++){
-	                
-	                 printf("Rank %d: Max Value of Line %d: %d\n", pid, i, result[i]);
-	            }
+	//And Here
+	            printf("Rank %d: child sending size to Master: %d\n", pid, result[0]); 
+	            MPI_Send(result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+	            printf("Rank %d: child sent size from Master\n", pid); 
 	            
+	            printf("Rank %d: child sending data to Master\n", pid); 
+	            MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD);
+	            printf("Rank %d: child sent data to Master\n", pid); 
+
+	//To Here
 	            free(result);
                
                 }
