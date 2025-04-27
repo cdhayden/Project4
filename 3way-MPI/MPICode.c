@@ -18,6 +18,8 @@ int MAX_LINES = 1; // vary amount of Lines total
 
 int *find_max_ascii(char *src, int size) {
 	
+	printf("find_max_ascii Started\n"); 
+	
     int* result = calloc(size+2, sizeof(char)); //Get space for result size
 
 	
@@ -65,8 +67,11 @@ int *find_max_ascii(char *src, int size) {
 	
 	result[0] = lines; //Set the size varible to the current size
 	
+	printf("find_max_ascii Done\n");
+	
 	return result;//Return the results
 	
+
 
 	
 }
@@ -79,6 +84,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s <file_path> <thread_count> <input_size> <max_lines>\n", argv[0]);
         return EXIT_FAILURE;
     }
+    
+    printf("Program Started\n"); 
 
 	sscanf(argv[2], "%d", &MAX_THREADS); //Read into the arguments
     sscanf(argv[3], "%d", &MAX_INPUT);
@@ -127,18 +134,21 @@ int main(int argc, char *argv[]) {
 
 			chunk++;
 			for(int i = 1; i < MAX_THREADS-1; i++){ //To all threads but the last one
-				printf("Rank %d: sending data to %d\n", pid, i); 
+				printf("Rank %d: sending size to %d\n", pid, i); 
 				MPI_Send(&chunk, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the size of each buffer
+				printf("Rank %d: size to %d sent\n", pid, i); 
 			}
 			chunk--;
 			
             int remainer = sb.st_size%(MAX_THREADS-2); //Find the remainer for the last thread to complete
 			
-			printf("Rank %d: sending data to %d\n", pid, MAX_THREADS - 1);  
+			printf("Rank %d: sending size to %d\n", pid, MAX_THREADS - 1); 
 
 			remainer++;
 			MPI_Send(&remainer, 1, MPI_INT, MAX_THREADS - 1, 0, MPI_COMM_WORLD); //Send the size to the remainder handling buffer
 			remainer--;
+			
+			printf("Rank %d: size to %d sent\n", pid, MAX_THREADS - 1); 
 			
             char *buffer = calloc(chunk+1, sizeof(char)); // depending on input size, create the buffer
         
@@ -153,6 +163,8 @@ int main(int argc, char *argv[]) {
 		    	printf("Rank %d: sending data to %d\n", pid, piter); 
 				
                 MPI_Send(buffer, chunk+1, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer read to another branch
+                
+                printf("Rank %d: data to %d sent\n", pid, piter); 
 				
                 piter++; //Increment the process counter
             }
@@ -164,6 +176,8 @@ int main(int argc, char *argv[]) {
 			printf("Rank %d: sending data to %d\n", pid, piter); 
 			
             MPI_Send(buffer, remainer, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer containing the rest to the 
+            
+            printf("Rank %d: data to %d sent\n", pid, piter); 
 
 			int hold = 0; //Hold varible for later in the for loops to check for non terminating lines
 			
@@ -171,15 +185,19 @@ int main(int argc, char *argv[]) {
 				
                 int size = 0; //Create size for the varible
 				
-		    printf("Rank %d: reciving size from %d\n", pid, i);
+		    printf("Rank %d: receiving size from %d\n", pid, i);
 				
                 MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE); //Reciveve the size from the current process
+                
+                 printf("Rank %d: size from %d received\n", pid, i);
 				
                 int *cast = calloc(size, sizeof(int)); // create cast buffer using that input size
 				
 		    	printf("Rank %d: reciving data from %d\n", pid, i);
 				
                 MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE); //Get the cast buffer from the current process
+                
+                printf("Rank %d: data from %d received\n", pid, i);
                     
                 if(hold == 1){//If hold is true
 					
@@ -217,9 +235,11 @@ int main(int argc, char *argv[]) {
 			
 			for(int i = 1; i < MAX_THREADS; i++){ //Go through each process
 				
-				printf("Rank %d: sending data to %d\n", pid, i); 
+				printf("Rank %d: sending size to %d\n", pid, i); 
 				
 				MPI_Send(&psize, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the szie input to each of them
+				
+				printf("Rank %d: size to %d sent\n", pid, i); 
 			}
             char *buffer = calloc(MAX_INPUT, sizeof(char)); // create the buffer to be the size of the input
 
@@ -239,6 +259,8 @@ int main(int argc, char *argv[]) {
 					printf("Rank %d: sending data to %d\n", pid, piter); 
 					
                     MPI_Send(buffer, MAX_INPUT, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
+                    
+                    printf("Rank %d: data to %d sent\n", pid, piter); 
                     piter++; //Increment the process counter
 					
                 }
@@ -254,6 +276,8 @@ int main(int argc, char *argv[]) {
 			printf("Rank %d: recieving size from %d\n", pid, i); 
 					
                     MPI_Recv(&size, 1, MPI_INT, i, 0,  MPI_COMM_WORLD,MPI_STATUS_IGNORE); //Recieve the size of the return array from the current process
+                    
+                    printf("Rank %d: size from %d received\n", pid, i); 
 					
                     int *cast = calloc(size, sizeof(int)); // create the cast depending on the input size
 					
@@ -261,6 +285,7 @@ int main(int argc, char *argv[]) {
 					
                     MPI_Recv(cast, size, MPI_INT, i, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE); //Read in the array form the current process
 
+                    printf("Rank %d: data from %d recived\n", pid, i); 
 					
                     if(hold == 1){//If hold is true
 						
@@ -299,6 +324,8 @@ int main(int argc, char *argv[]) {
 			printf("Rank %d: sending termination to %d\n", pid, i); 
 			
 			MPI_Send(temp, 2, MPI_CHAR, i, 0, MPI_COMM_WORLD); //Send the kill buffer to each process.
+			
+			printf("Rank %d: termination to %d sent\n", pid, i); 
 		}
 
 		free(temp); //Free the temp array.
@@ -334,8 +361,9 @@ int main(int argc, char *argv[]) {
 		
 		while(done == 0){ //While its not done
 
-			printf("Rank %d: receive data from %d\n", pid, 0);
+			printf("Rank %d: receive size from %d\n", pid, 0);
 			MPI_Recv(buffer, size, MPI_CHAR, 0,0, MPI_COMM_WORLD,MPI_STATUS_IGNORE); //Read in the buffer
+            printf("Rank %d: size from %d received\n", pid, 0);
 
 			if(buffer[0] == '\0' && buffer[1] == '\0')  //Check for null terminators for the termination
 			{
@@ -348,9 +376,11 @@ int main(int argc, char *argv[]) {
 
 				printf("Rank %d: sending size to %d\n", pid, 0);
 				MPI_Send(&result[0], 1, MPI_INT, 0, 0, MPI_COMM_WORLD); //Send the size to the main process
+				printf("Rank %d: size to %d sent\n", pid, 0);
 				
 				printf("Rank %d: sending data to %d\n", pid, 0);
 				MPI_Send(result, result[0], MPI_INT, 0, 0, MPI_COMM_WORLD); //Send the array to the main process.
+                printf("Rank %d: data to %d sent\n", pid, 0);
 
 				free(result); //Free the results array
 			}
