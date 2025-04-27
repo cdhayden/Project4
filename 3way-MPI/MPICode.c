@@ -55,7 +55,7 @@ int *find_max_ascii(char *src, int size) {
 
 	if(max_value != 0) //If theres a left over value
 	{
-		results[lines] = max_value; //Set the last line to it,
+		result[lines] = max_value; //Set the last line to it,
 		lines++; //Increment lines
 	}
 	
