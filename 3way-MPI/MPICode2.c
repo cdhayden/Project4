@@ -23,8 +23,10 @@ int main(int argc, char *argv[]) {
     
     printf("Program Started\n"); 
 
-    sscanf(argv[2], "%d", &MAX_INPUT); //Read into the arguments
-    sscanf(argv[3], "%d", &MAX_LINES);
+	
+	
+
+
 
     // Initialize the MPI environment
 	MPI_Init(&argc, &argv);
@@ -36,6 +38,10 @@ int main(int argc, char *argv[]) {
 	// Get the number of processes
 	int number_of_processes;
 	MPI_Comm_size(MPI_COMM_WORLD, &number_of_processes);
+
+
+	    sscanf(argv[2], "%d", &MAX_INPUT); //Read into the arguments
+    	    sscanf(argv[3], "%d", &MAX_LINES);
 
 
 	//Report that the proccesses started
@@ -56,6 +62,15 @@ int main(int argc, char *argv[]) {
             
             printf("Rank %d: Master Opened File\n", pid);
         }
+
+	struct stat sb;
+    	if (fstat(fd, &sb) == -1) {
+        	perror("fstat");
+        	close(fd);
+        	return EXIT_FAILURE;
+    	}
+
+	if(sb.st_size/number_of_processes < MAX_INPUT) {sscanf(sb.st_size/number_of_processes, "%d", &MAX_INPUT);} //Read into the arguments
         
         int *results = calloc(MAX_LINES, sizeof(int));
 		int* result = calloc(MAX_INPUT+2, sizeof(char)); //Get space for result size
