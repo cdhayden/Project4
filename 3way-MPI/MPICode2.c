@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
         }
         
         int *results = calloc(MAX_LINES, sizeof(int));
+		int* result = calloc(MAX_INPUT+2, sizeof(char)); //Get space for result size
         
         printf("Rank %d: Master Reading File\n", pid);
         char *buffer = calloc(MAX_INPUT, sizeof(char));
@@ -83,7 +84,66 @@ int main(int argc, char *argv[]) {
             
             }
             
-            if(read(fd, buffer, MAX_INPUT - 1) == 0) {done = 1;}
+            if(read(fd, buffer, MAX_INPUT - 1) == 0) {
+				done = 1;
+			}
+			else{
+				buffer[MAX_INPUT-1] = '\0';
+				
+				printf("Rank %d: find_max_ascii Started\n", pid); 
+	
+	
+	            int lines = 2;//Get the number of lines, defaults to two for the size and holding var
+	
+	            int max_value = 0; // Sets the max value of a line
+
+	
+	            int hold = 0; //Bool that checks if theres a hold over
+
+	            for(int i  = 0; i < MAX_INPUT && buffer[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
+
+		            char c = buffer[i];//Get the current character
+		
+		            if (c == '\n') { //If its a new lines,
+
+			 
+			            result[lines] = max_value; //Report the max value to the results
+			            lines++; //Increment lines
+			            max_value = 0; //Reset the max value
+			            hold = 0; //And reset hold to zero
+		            }
+			 
+		            else {//If its another character
+			 
+                        if ((unsigned char)c > max_value) { //Check if the unsigned char is greater than the max value
+                            max_value = (unsigned char)c; //And update max_value if it is
+                        }
+			            hold = 1; //Set the hold to one to say we're at the end
+                    }
+
+	            }
+
+	            if(max_value != 0) //If theres a left over value
+	            {
+		            result[lines] = max_value; //Set the last line to it,
+		            lines++; //Increment lines
+	            }
+	
+
+
+	            result[1] = hold; //Set the hold varible to hold
+	
+	            result[0] = lines; //Set the size varible to the current size
+	
+	            printf("Rank %d: find_max_ascii Done\n",pid);
+	
+	
+	            
+
+
+				
+				
+			}
             
             for(int i = 1; i < piter; i++){
                 
@@ -125,13 +185,43 @@ int main(int argc, char *argv[]) {
                 hold = resarray[1];
                 
             }
+
+			if(done == 0){
+
+			if(hold == 1){
+                    
+                    if(result[2] > results[(resline - 1)]){
+                        
+                        results[(resline - 1)] = result[2];
+                        
+                    }
+                    for(int j = 3; j < size && resline < MAX_LINES; j++){
+                        
+                        results[resline] = result[j];
+                        resline++;
+                    }
+                    
+                }
+                else{
+                    for(int j = 2; j < size && resline < MAX_LINES; j++){
+                        
+                        results[resline] = result[j];
+                        resline++;
+                    }
+                    
+                }
                 
+                hold = result[1];
+			
+			}
                 
             piter = 1;
                 
             
             
         }
+
+		free(result);
         
         buffer[0] = 'a';
         buffer[1] = 'a';
