@@ -69,14 +69,27 @@ int main(int argc, char *argv[]) {
         	close(fd);
         	return EXIT_FAILURE;
     	}
+    	
+    int chunk = sb.st_size/number_of_processes;	
 
-	if(sb.st_size/number_of_processes < MAX_INPUT) {sscanf(sb.st_size/number_of_processes, "%d", &MAX_INPUT);} //Read into the arguments
+	if(chunk > MAX_INPUT) {
+	
+	chunk = MAX_INPUT;
+	
+	}
+	
+	for(int i = 1; i < number_of_processes; i++){
+	
+	printf("Rank %d: Master sending size %d to %d\n", pid, chunk, i); 
+	 MPI_Send(&chunk, 1, MPI_INT, i, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
+	
+	}
         
         int *results = calloc(MAX_LINES, sizeof(int));
-		int* result = calloc(MAX_INPUT+2, sizeof(char)); //Get space for result size
+		int* result = calloc(chunk+2, sizeof(char)); //Get space for result size
         
         printf("Rank %d: Master Reading File\n", pid);
-        char *buffer = calloc(MAX_INPUT, sizeof(char));
+        char *buffer = calloc(chunk, sizeof(char));
         
         int done = 0;
         int hold = 0;
@@ -85,13 +98,13 @@ int main(int argc, char *argv[]) {
         
         while(done == 0){
             
-             while(piter < number_of_processes && read(fd, buffer, MAX_INPUT - 1 ) != 0 && resline < MAX_LINES){
+             while(piter < number_of_processes && read(fd, buffer, chunk - 1 ) != 0 && resline < MAX_LINES){
             
-            buffer[MAX_INPUT-1] = '\0'; //Set the last char to a null terminator for string reading
+            buffer[chunk-1] = '\0'; //Set the last char to a null terminator for string reading
 					
 			printf("Rank %d: Master sending data to %d\n", pid, piter); 
 					
-            MPI_Send(buffer, MAX_INPUT, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
+            MPI_Send(buffer, chunk, MPI_CHAR, piter, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
                     
             printf("Rank %d: data to %d sent\n", pid, piter); 
             piter++; //Increment the process counter
@@ -99,11 +112,11 @@ int main(int argc, char *argv[]) {
             
             }
             
-            if(read(fd, buffer, MAX_INPUT - 1) == 0) {
+            if(read(fd, buffer, chunk - 1) == 0) {
 				done = 1;
 			}
 			else{
-				buffer[MAX_INPUT-1] = '\0';
+				buffer[chunk-1] = '\0';
 				
 				printf("Rank %d: find_max_ascii Started\n", pid); 
 	
@@ -115,7 +128,7 @@ int main(int argc, char *argv[]) {
 	
 	            int hold = 0; //Bool that checks if theres a hold over
 
-	            for(int i  = 0; i < MAX_INPUT && buffer[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
+	            for(int i  = 0; i < chunk && buffer[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
 
 		            char c = buffer[i];//Get the current character
 		
@@ -202,6 +215,8 @@ int main(int argc, char *argv[]) {
             }
 
 			if(done == 0){
+			
+			int size = result[0];
 
 			if(hold == 1){
                     
@@ -245,7 +260,7 @@ int main(int argc, char *argv[]) {
         for(int i = 1; i < number_of_processes; i++){
             
             printf("Rank %d: Master sending kill to %d\n", pid, i); 
-            MPI_Send(buffer, MAX_INPUT, MPI_CHAR, i, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
+            MPI_Send(buffer, chunk, MPI_CHAR, i, 0, MPI_COMM_WORLD); //Send the buffer to be read in the current process 
             
         }
         
@@ -270,12 +285,17 @@ int main(int argc, char *argv[]) {
 
         printf("Rank %d: Child Declared\n", pid);
         
+        int chunk = 0;
+        printf("Rank %d: Child recieving size \n", pid); 
+        MPI_Recv(&chunk, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Rank %d: Child recieved size %d\n", pid, chunk); 
+        
         int kill = 0;
-        char *buffer = calloc(MAX_INPUT, sizeof(char));
+        char *buffer = calloc(chunk, sizeof(char));
         while(kill != 1)
         {
            printf("Rank %d: child reciving data from Master\n", pid); 
-           MPI_Recv(buffer, MAX_INPUT, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+           MPI_Recv(buffer, chunk, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
            printf("Rank %d: child recived data from Master\n", pid); 
            if(buffer[0] == 'a' && buffer[1] == 'a' && buffer[2] == 'a' && buffer[3] == 'a'){
                
@@ -287,7 +307,7 @@ int main(int argc, char *argv[]) {
                
                	printf("Rank %d: find_max_ascii Started\n", pid); 
 	
-                int* result = calloc(MAX_INPUT+2, sizeof(char)); //Get space for result size
+                int* result = calloc(chunk+2, sizeof(char)); //Get space for result size
 
 	
 	            int lines = 2;//Get the number of lines, defaults to two for the size and holding var
@@ -297,7 +317,7 @@ int main(int argc, char *argv[]) {
 	
 	            int hold = 0; //Bool that checks if theres a hold over
 
-	            for(int i  = 0; i < MAX_INPUT && buffer[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
+	            for(int i  = 0; i < chunk && buffer[i] != '\0'; i++){ //For loop that checks over size and the source to see if null terminator. 
 
 		            char c = buffer[i];//Get the current character
 		
