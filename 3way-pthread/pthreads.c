@@ -14,7 +14,7 @@
 
 int MAX_THREADS = 1;  // to change with core count
 int MAX_LINES = 1; // vary input size
-long MAX_BYTES = 1;
+
 
 // Structure to pass data to each thread
 typedef struct {
@@ -52,14 +52,14 @@ void *find_max_ascii(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 5) {
+    if (argc != 4) {
         fprintf(stderr, "Usage: %s <file_path>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    sscanf(argv[2], "%d", &MAX_BYTES);
-    sscanf(argv[3], "%d", &MAX_THREADS);
-    sscanf(argv[4], "%d", &MAX_LINES);
+    
+    sscanf(argv[2], "%d", &MAX_THREADS);
+    sscanf(argv[3], "%d", &MAX_LINES);
 
     int fd = open(argv[1], O_RDONLY);
     if (fd < 0) {
@@ -74,9 +74,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    if(MAX_BYTES > sb.st_size)
-        MAX_BYTES = sb.st_size;
-    char *file_data = mmap(NULL, MAX_BYTES, PROT_READ, MAP_PRIVATE, fd, 0);
+
+        long file_size = sb.st_size;
+    char *file_data = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (file_data == MAP_FAILED) {
         perror("mmap");
         close(fd);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     long *line_offsets = malloc(sizeof(long) * (MAX_LINES + 1));
     if (!line_offsets) {
         perror("malloc");
-        munmap(file_data, MAX_BYTES);
+        munmap(file_data, file_size);
         close(fd);
         return EXIT_FAILURE;
     }
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     int line_count = 0;
     line_offsets[0] = 0;
 
-    while (valid_size < MAX_BYTES && line_count < MAX_LINES) {
+    while (valid_size < file_size && line_count < MAX_LINES) {
         if (file_data[valid_size] == '\n') {
             line_offsets[++line_count] = valid_size + 1;
         }
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     if (!results) {
         perror("calloc");
         free(line_offsets);
-        munmap(file_data, MAX_BYTES);
+        munmap(file_data, file_size);
         close(fd);
         return EXIT_FAILURE;
     }
