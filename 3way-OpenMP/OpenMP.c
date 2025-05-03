@@ -128,19 +128,18 @@ int main(int argc, char *argv[])
 
     omp_set_num_threads(MAX_THREADS);
 
-    int current_line = 0;
+    
 
 #pragma omp parallel for
     for (int i = 0; i < MAX_THREADS; i++)
     {
-        int lines_for_thread = lines_per_thread + (i < remainder ? 1 : 0);
-        long start_offset = line_offsets[current_line];
-        long end_offset = line_offsets[current_line + lines_for_thread];
-        int line_start = current_line;
+        int start_line = thread_starts[i];
+    int end_line = thread_starts[i + 1];
+    long start_offset = line_offsets[start_line];
+    long end_offset = line_offsets[end_line];
 
-        find_max_ascii(file_data, start_offset, end_offset, line_start, results);
-
-        current_line += lines_for_thread;
+        find_max_ascii(file_data, start_offset, end_offset, start_line, results);
+        
     }
 
     for (int i = 0; i < actual_lines; i++)
