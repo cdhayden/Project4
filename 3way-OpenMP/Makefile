@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -O2 -fopenmp -Wall -Wextra
-TARGET = ascii_max_omp
+TARGET = OpenMP
 SRC = OpenMP.c
 
 all: $(TARGET)
