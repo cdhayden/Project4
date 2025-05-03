@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    munmap(file_data, MAX_BYTES);
+    munmap(file_data, file_size);
     close(fd);
     free(results);
     free(line_offsets);
