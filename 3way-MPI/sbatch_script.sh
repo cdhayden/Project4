@@ -1,4 +1,24 @@
 #!/bin/bash
+for i in 1 2 3 4 5
+do
 
-sbatch --time=10 --mem=7G --threads-per-core=1 --ntasks-per-node=4 --nodes=1 --constraint=moles --job-name='4c' program_threads.sh 1
+##1 node tests 
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=2 --nodes=1 --constraint=moles --job-name='1c' program_threads.sh $i
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=3 --nodes=1 --constraint=moles --job-name='2c' program_threads.sh $i
+##sbatch --time=20 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c' program_threads.sh $i
+##sbatch --time=10 --mem=7G --threads-per-core=1 --ntasks-per-node=9 --nodes=1 --constraint=moles --job-name='8c' program_threads.sh $i
+##sbatch --time=5 --mem=7G --threads-per-core=1 --ntasks-per-node=17 --nodes=1 --constraint=moles --job-name='16c' program_threads.sh $i
 
+##2 node tests 
+##sbatch --time=20 --mem=7G --threads-per-core=1 --ntasks-per-node=3 --nodes=2 --constraint=moles --job-name='4c-2sys' program_threads.sh $i
+##sbatch --time=10 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=2 --constraint=moles --job-name='8c-2sys' program_threads.sh $i
+##sbatch --time=5 --mem=7G --threads-per-core=1 --ntasks-per-node=9 --nodes=2 --constraint=moles --job-name='16c-2sys' program_threads.sh $i
+
+##varied input tests
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c-100' program_threads.sh $i 100
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c-1000' program_threads.sh $i 1000
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c-10000' program_threads.sh $i 10000
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c-100000' program_threads.sh $i 100000
+##sbatch --time=30 --mem=7G --threads-per-core=1 --ntasks-per-node=5 --nodes=1 --constraint=moles --job-name='4c-1000000' program_threads.sh $i 1000000
+
+done
